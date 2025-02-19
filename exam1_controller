@@ -1,0 +1,99 @@
+%% Clear previous data and set up the environment
+clc;
+clear;
+close all;
+
+%% Initialize parameters
+global M m l g sigma1 sigma2 Tp sita k_r
+M = 5;                % Khối lượng M (kg)
+omega = 2;            % Tần số (rad/s)
+m = 2;                % Khối lượng m (kg)
+l = 3;                % Chiều dài l (m)
+g = 9.81;             % Gia tốc trọng trường (m/s^2)
+sigma1 = 3.5;         % Tham số sigma1
+sigma2 = 3;           % Tham số sigma2
+Tp = 0.5;             % Hằng số thời gian Tp (s)
+k_r = 2;              % Hệ số khuếch đại cho thuật toán điều khiển chống nhiễu (robust control gain)
+sita_hat = 0;         % Ước lượng ban đầu của tham số không chắc chắn
+sita = omega / M;     % Tham số tính được từ omega và M
+
+% Điều kiện ban đầu cho x1, x2 và x3 (các biến trạng thái)
+x_init1 = [6; -6];    % Điều kiện ban đầu cho trường hợp thứ nhất
+x_init2 = [4; -4];    % Điều kiện ban đầu cho trường hợp thứ hai
+x_init3 = [2; -2];    % Điều kiện ban đầu cho trường hợp thứ ba
+
+% Kết hợp các điều kiện ban đầu vào vectơ trạng thái [x1, x2, sita_hat, u]
+f_init1 = [x_init1; sita_hat; 0];
+f_init2 = [x_init2; sita_hat; 0];
+f_init3 = [x_init3; sita_hat; 0];
+
+%% Define simulation time (mở rộng thời gian mô phỏng để hiển thị kết quả chi tiết)
+tspan = 0:0.01:1; % Mô phỏng từ 0 đến 10 giây với bước 0.01 giây
+
+%% Plotting x1 (Position of first mass)
+figure;
+tic;
+[t, x] = ode45(@Ap, tspan, f_init1);
+plot(t, x(:, 1), 'b', 'LineWidth', 1.5);
+hold on;
+[t, x] = ode45(@Ap, tspan, f_init2);
+plot(t, x(:, 1), 'r', 'LineWidth', 1.5);
+[t, x] = ode45(@Ap, tspan, f_init3);
+plot(t, x(:, 1), 'g', 'LineWidth', 1.5);
+hold off;
+title('Response of x1 (Position of first mass)');
+xlabel('Time (s)', 'FontSize', 12);
+ylabel('x1 (m)', 'FontSize', 12);
+legend('(x_1(0),x_2(0)) = (6, -6)', '(x_1(0),x_2(0)) = (4, -4)', '(x_1(0),x_2(0)) = (2, -2)', 'Location', 'best');
+grid on;
+
+%% Plotting x2 (Velocity of first mass)
+figure;
+[t, x] = ode45(@Ap, tspan, f_init1);
+plot(t, x(:, 2), 'b', 'LineWidth', 1.5);
+hold on;
+[t, x] = ode45(@Ap, tspan, f_init2);
+plot(t, x(:, 2), 'r', 'LineWidth', 1.5);
+[t, x] = ode45(@Ap, tspan, f_init3);
+plot(t, x(:, 2), 'g', 'LineWidth', 1.5);
+hold off;
+title('Response of x2 (Velocity of first mass)');
+xlabel('Time (s)', 'FontSize', 12);
+ylabel('x2 (m/s)', 'FontSize', 12);
+legend('(x_1(0),x_2(0)) = (6, -6)', '(x_1(0),x_2(0)) = (4, -4)', '(x_1(0),x_2(0)) = (2, -2)', 'Location', 'best');
+grid on;
+
+%% Plotting Control Input (u)
+figure;
+[t, x] = ode45(@Ap, tspan, f_init1);
+[~, U] = cellfun(@(t, x) Ap(t, x.'), num2cell(t), num2cell(x, 2), 'uni', 0);
+plot(t, cell2mat(U), 'b', 'LineWidth', 1.5);
+hold on;
+[t, x] = ode45(@Ap, tspan, f_init2);
+[~, U] = cellfun(@(t, x) Ap(t, x.'), num2cell(t), num2cell(x, 2), 'uni', 0);
+plot(t, cell2mat(U), 'r', 'LineWidth', 1.5);
+[t, x] = ode45(@Ap, tspan, f_init3);
+[~, U] = cellfun(@(t, x) Ap(t, x.'), num2cell(t), num2cell(x, 2), 'uni', 0);
+plot(t, cell2mat(U), 'g', 'LineWidth', 1.5);
+hold off;
+title('Control Input u');
+xlabel('Time (s)', 'FontSize', 12);
+ylabel('u (N)', 'FontSize', 12);
+legend('(x_1(0),x_2(0)) = (6, -6)', '(x_1(0),x_2(0)) = (4, -4)', '(x_1(0),x_2(0)) = (2, -2)', 'Location', 'best');
+grid on;
+
+%% Plotting Estimate of Uncertain Parameter sita_hat
+figure;
+[t, x] = ode45(@Ap, tspan, f_init1);
+plot(t, x(:, 3), 'b', 'LineWidth', 1.5);
+hold on;
+[t, x] = ode45(@Ap, tspan, f_init2);
+plot(t, x(:, 3), 'r', 'LineWidth', 1.5);
+[t, x] = ode45(@Ap, tspan, f_init3);
+plot(t, x(:, 3), 'g', 'LineWidth', 1.5);
+hold off;
+title('Estimate of Uncertain Parameter \sita\_hat');
+xlabel('Time (s)', 'FontSize', 12);
+ylabel('\sita\_hat', 'FontSize', 12);
+legend('(x_1(0),x_2(0)) = (6, -6)', '(x_1(0),x_2(0)) = (4, -4)', '(x_1(0),x_2(0)) = (2, -2)', 'Location', 'best');
+grid on;
